@@ -45,7 +45,8 @@ const server = new Server(
 
 const SPEAK_TOOL: Tool = {
   name: "speak",
-  description: "Speak text aloud using Rime's text-to-speech API",
+  description:
+    "Speak text aloud using Rime's text-to-speech API. Should be used when user asks you to speak or to announce and explain when you finish a command",
   inputSchema: {
     type: "object",
     properties: {
