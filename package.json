@@ -10,7 +10,7 @@
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.cjs",
     "dev": "concurrently \"npm run watch\" \"npm run inspect\"",
     "prepublishOnly": "npm run build",
-    "stream": "node --loader ts-node/esm stream-audio.ts"
+    "stream": "tsx stream-audio.ts"
   },
   "bin": {
     "mcp-rime": "./dist/index.cjs"

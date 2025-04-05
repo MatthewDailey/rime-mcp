@@ -125,8 +125,8 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
   // Merge default config with any custom options
   const config: TtsConfig = { ...DEFAULT_CONFIG, ...customConfig };
 
-  console.log("Starting Rime WebSockets streaming with text:");
-  console.log(`"${text}"`);
+  console.error("Starting Rime WebSockets streaming with text:");
+  console.error(`"${text}"`);
 
   try {
     const apiKey = getApiKey();
@@ -165,7 +165,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
       function startPlayback() {
         if (isPlaying) return;
 
-        console.log("Starting audio playback...");
+        console.error("Starting audio playback...");
         isPlaying = true;
 
         try {
@@ -180,7 +180,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
           }
 
           playerProcess.stdout?.on("data", (data) => {
-            console.log(`Player output: ${data}`);
+            console.error(`Player output: ${data}`);
           });
 
           playerProcess.stderr?.on("data", (data) => {
@@ -188,7 +188,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
           });
 
           playerProcess.on("close", (code) => {
-            console.log(`Player process exited with code ${code || 0}`);
+            console.error(`Player process exited with code ${code || 0}`);
             cleanup();
             resolve();
           });
@@ -205,7 +205,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
       }
 
       ws.on("open", function open() {
-        console.log("WebSocket connection established.");
+        console.error("WebSocket connection established.");
 
         // Send the entire text at once
         ws.send(JSON.stringify({ text }));
@@ -228,7 +228,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
             audioFileStream.write(audioBuffer);
 
             chunkCount++;
-            console.log(`Received chunk ${chunkCount} (${audioBuffer.length} bytes)`);
+            console.error(`Received chunk ${chunkCount} (${audioBuffer.length} bytes)`);
 
             // Start playback after buffering enough chunks
             if (chunkCount >= config.initialBufferSize && !isPlaying) {
@@ -236,7 +236,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
             }
           } else if (message.type === "timestamps") {
             // Optional: log the timestamps if needed for debugging
-            // console.log("Word timestamps received");
+            // console.error("Word timestamps received");
           } else if (message.type === "error") {
             console.error("Received error:", message.message);
             cleanup();
@@ -250,7 +250,7 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
       });
 
       ws.on("close", function close() {
-        console.log("WebSocket connection closed");
+        console.error("WebSocket connection closed");
 
         // Ensure file stream is properly closed
         audioFileStream.end();
@@ -274,15 +274,15 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
 }
 
 // Only run the main function when executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  // Text to speak from command line or default
-  const DEFAULT_TEXT =
-    "This is a test of the Rime WebSockets streaming API. Audio should be played as it arrives, providing a more natural experience.";
-  const text = process.argv[2] || DEFAULT_TEXT;
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   // Text to speak from command line or default
+//   const DEFAULT_TEXT =
+//     "This is a test of the Rime WebSockets streaming API. Audio should be played as it arrives, providing a more natural experience.";
+//   const text = process.argv[2] || DEFAULT_TEXT;
 
-  // Run the streaming function
-  playText(text).catch((error) => {
-    console.error("Fatal error:", error);
-    process.exit(1);
-  });
-}
+//   // Run the streaming function
+//   playText(text).catch((error) => {
+//     console.error("Fatal error:", error);
+//     process.exit(1);
+//   });
+// }

@@ -7,11 +7,10 @@ import {
   McpError,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import fetch from "node-fetch";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { execSync } from "child_process";
+import { playText } from "./stream-audio.js";
 
 const RIME_API_KEY = process.env.RIME_API_KEY;
 if (!RIME_API_KEY) {
@@ -79,142 +78,6 @@ function log(level: string, message: string): void {
   console.error(`[${level}] ${message}`);
 }
 
-interface AudioPlayResult {
-  success: boolean;
-  message?: string;
-}
-
-// Function to play audio based on OS
-function playAudio(filePath: string): AudioPlayResult {
-  try {
-    const platform = os.platform();
-
-    // Select the appropriate command based on platform
-    let command = "";
-
-    if (platform === "darwin") {
-      // macOS
-      command = `afplay "${filePath}"`;
-    } else if (platform === "win32") {
-      // Windows
-      command = `powershell -c (New-Object Media.SoundPlayer "${filePath}").PlaySync()`;
-    } else {
-      // Linux and others
-      const players = ["mpg123", "mplayer", "aplay", "ffplay"];
-      let playerFound = false;
-
-      for (const player of players) {
-        try {
-          execSync(`which ${player}`);
-          if (player === "mpg123" || player === "mplayer") {
-            command = `${player} "${filePath}"`;
-          } else if (player === "aplay") {
-            command = `${player} -q "${filePath}"`;
-          } else if (player === "ffplay") {
-            command = `${player} -nodisp -autoexit -hide_banner -loglevel error "${filePath}"`;
-          } else {
-            continue;
-          }
-          playerFound = true;
-          break;
-        } catch (e) {
-          // Player not found, try next one
-          continue;
-        }
-      }
-
-      if (!playerFound) {
-        return {
-          success: false,
-          message:
-            "No suitable audio player found. Please install mpg123, mplayer, aplay, or ffplay.",
-        };
-      }
-    }
-
-    // Execute the command
-    execSync(command);
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to play audio: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-}
-
-async function generateAndPlaySpeech(
-  text: string,
-  speaker: string = "cove",
-  speedAlpha: number = 1.0,
-  reduceLatency: boolean = false
-): Promise<any> {
-  log(
-    "INFO",
-    `Starting speech synthesis with voice "${speaker}" for text: "${text.substring(0, 30)}${text.length > 30 ? "..." : ""}"`
-  );
-
-  try {
-    // Make the API request to get audio via JSON
-    const response = await fetch("https://users.rime.ai/v1/rime-tts", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${RIME_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: text,
-        speaker: speaker,
-        modelId: "mistv2",
-        speedAlpha: speedAlpha,
-        reduceLatency: reduceLatency,
-        audioFormat: "mp3",
-        samplingRate: 22050,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Parse the JSON response
-    const data = (await response.json()) as { data: string };
-    if (!data || !data.data) {
-      throw new Error("Invalid response format from Rime API");
-    }
-
-    log("INFO", "Audio data received from Rime");
-
-    // Decode the base64 audio data
-    const audioBuffer = Buffer.from(data.data, "base64");
-
-    // Create a unique temporary file path
-    const tmpFilePath = path.join(tmpDir, `speech-${Date.now()}.mp3`);
-
-    // Write the audio data to the file
-    fs.writeFileSync(tmpFilePath, audioBuffer);
-    log("INFO", `Audio saved to ${tmpFilePath}`);
-
-    // Play the audio file
-    log("INFO", "Playing audio...");
-    const playResult = playAudio(tmpFilePath);
-    if (!playResult.success) {
-      throw new Error(playResult.message);
-    }
-
-    log("INFO", "Audio playback completed");
-
-    return {
-      success: true,
-      text,
-      speaker,
-    };
-  } catch (error) {
-    throw error;
-  }
-}
-
 async function doSpeak(params: {
   text: string;
   speaker?: string;
@@ -222,12 +85,14 @@ async function doSpeak(params: {
   reduceLatency?: boolean;
 }) {
   try {
-    return await generateAndPlaySpeech(
-      params.text,
-      params.speaker,
-      params.speedAlpha,
-      params.reduceLatency
-    );
+    // Use the playText function from stream-audio.ts
+    await playText(params.text);
+
+    return {
+      success: true,
+      text: params.text,
+      speaker: params.speaker || "cove",
+    };
   } catch (error: unknown) {
     log("ERROR", `Error: ${error instanceof Error ? error.message : String(error)}`);
     throw new McpError(
