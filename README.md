@@ -99,3 +99,109 @@ If you experience issues with audio playback:
 ## License
 
 MIT
+
+# Rime TTS Streaming Module
+
+A TypeScript/JavaScript module for streaming text-to-speech audio from Rime's WebSockets API.
+
+## Features
+
+- Stream audio from Rime's TTS service using WebSockets
+- Plays audio chunks as they arrive (reducing perceived latency)
+- Works across platforms (macOS, Windows, Linux)
+- Can be used as a command-line tool or imported as a module
+- Provides TypeScript types for better developer experience
+- Automatically cleans up temporary files
+
+## Prerequisites
+
+- Node.js v14 or higher
+- A Rime API key (get one at https://docs.rime.ai)
+- One of the following audio players (depending on your OS):
+  - macOS: afplay (built-in)
+  - Windows: Built-in SoundPlayer or ffplay
+  - Linux: mpg123, mplayer, aplay, or ffplay
+
+## Installation
+
+1. Clone or download this repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
+3. Add your Rime API key to a `.env` file:
+   ```
+   RIME_API_KEY=your_api_key_here
+   ```
+
+## Usage
+
+### As a Command-Line Tool
+
+Run the script with default text:
+
+```
+npm run stream
+```
+
+Or specify your own text:
+
+```
+npm run stream -- "Your custom text to be spoken goes here."
+```
+
+### As a Module in Your TypeScript/JavaScript Project
+
+```typescript
+// Import the playText function
+import { playText } from './stream-audio.js';
+
+// Basic usage
+await playText("Hello, this is some text to speak.");
+
+// With custom configuration
+await playText(
+  "This text will be spoken with custom settings.",
+  { 
+    speaker: "breeze", 
+    speedAlpha: 1.2,
+    initialBufferSize: 3
+  }
+);
+```
+
+See `example.ts` for a complete example of using the module.
+
+## Configuration Options
+
+The `playText` function accepts a second parameter with configuration options:
+
+```typescript
+interface TtsConfig {
+  speaker: string;         // Voice to use (default: "cove")
+  modelId: string;         // TTS model to use (default: "mistv2")
+  audioFormat: string;     // Output format (default: "mp3")
+  samplingRate: number;    // Audio sampling rate (default: 22050)
+  speedAlpha: number;      // Speed multiplier (default: 1.0, lower is faster)
+  reduceLatency: boolean;  // Optimize for lower latency (default: true)
+  initialBufferSize: number; // Chunks to buffer before playback (default: 2)
+}
+```
+
+## Available Voices
+
+Check the [Rime documentation](https://docs.rime.ai/api-reference/voices) for a complete list of available voices.
+
+## Development
+
+Build the TypeScript files:
+
+```
+npm run build
+```
+
+Run the example:
+
+```
+npx ts-node example.ts
+```

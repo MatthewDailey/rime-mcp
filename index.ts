@@ -7,15 +7,11 @@ import {
   McpError,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import dotenv from "dotenv";
 import fetch from "node-fetch";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { execSync } from "child_process";
-import { createWriteStream } from "fs";
-
-dotenv.config();
 
 const RIME_API_KEY = process.env.RIME_API_KEY;
 if (!RIME_API_KEY) {
