@@ -1,7 +1,7 @@
 {
-  "name": "mcp-starter",
+  "name": "mcp-rime",
   "version": "0.1.0",
-  "description": "ModelContextProtocol starter server",
+  "description": "ModelContextProtocol server for Rime text-to-speech API",
   "type": "module",
   "scripts": {
     "make-executable": "node -e \"fs.chmodSync('dist/index.cjs', '755');\" --require fs",
@@ -12,16 +12,23 @@
     "prepublishOnly": "npm run build"
   },
   "bin": {
-    "mcp-starter": "./dist/index.cjs"
+    "mcp-rime": "./dist/index.cjs"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.3"
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2",
+    "play-sound": "^1.1.6",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.14.0",
+    "@types/node-fetch": "^2.6.11",
+    "@types/play-sound": "^1.1.2",
+    "@types/tmp": "^0.2.6",
     "concurrently": "^8.2.2",
     "esbuild": "^0.24.0",
     "prettier": "^3.4.2",
