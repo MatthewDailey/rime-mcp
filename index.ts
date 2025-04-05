@@ -7,13 +7,13 @@ import {
   McpError,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import fetch from "node-fetch";
 import dotenv from "dotenv";
+import fetch from "node-fetch";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { promisify } from "util";
-import player from "play-sound";
+import { execSync } from "child_process";
+import { createWriteStream } from "fs";
 
 dotenv.config();
 
@@ -23,11 +23,7 @@ if (!RIME_API_KEY) {
   process.exit(1);
 }
 
-// Initialize audio player
-const audioPlayer = player({});
-const playAudio = promisify(audioPlayer.play.bind(audioPlayer));
-
-// Create temporary directory for audio chunks
+// Create a temporary directory for audio files
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rime-audio-"));
 process.on("exit", () => {
   try {
@@ -54,7 +50,7 @@ const server = new Server(
 
 const SPEAK_TOOL: Tool = {
   name: "speak",
-  description: "Speak text aloud using Rime's text-to-speech API with real-time streaming",
+  description: "Speak text aloud using Rime's text-to-speech API",
   inputSchema: {
     type: "object",
     properties: {
@@ -83,77 +79,144 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [SPEAK_TOOL],
 }));
 
-interface RimeEvent {
-  type: "chunk" | "timestamps" | "done" | "error";
-  data?: string;
-  word_timestamps?: {
-    words: string[];
-    start: number[];
-    end: number[];
-  };
-  message?: string;
-  done?: boolean;
+function log(level: string, message: string): void {
+  console.error(`[${level}] ${message}`);
 }
 
-async function* parseEventStream(readableStream: any): AsyncGenerator<RimeEvent> {
-  // Handle node-fetch response
-  if (readableStream.body) {
-    readableStream = readableStream.body;
-  }
+interface AudioPlayResult {
+  success: boolean;
+  message?: string;
+}
 
-  // Handle ReadableStream from fetch
-  if (readableStream.getReader) {
-    const textDecoder = new TextDecoder();
-    const reader = readableStream.getReader();
-    let buffer = "";
+// Function to play audio based on OS
+function playAudio(filePath: string): AudioPlayResult {
+  try {
+    const platform = os.platform();
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    // Select the appropriate command based on platform
+    let command = "";
 
-        buffer += textDecoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+    if (platform === "darwin") {
+      // macOS
+      command = `afplay "${filePath}"`;
+    } else if (platform === "win32") {
+      // Windows
+      command = `powershell -c (New-Object Media.SoundPlayer "${filePath}").PlaySync()`;
+    } else {
+      // Linux and others
+      const players = ["mpg123", "mplayer", "aplay", "ffplay"];
+      let playerFound = false;
 
-        let currentEvent = "";
-        let currentData = "";
-
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7).trim();
-          } else if (line.startsWith("data: ")) {
-            currentData = line.slice(6).trim();
-            if (currentData && currentEvent) {
-              try {
-                const parsedData = JSON.parse(currentData);
-                yield {
-                  type: currentEvent as RimeEvent["type"],
-                  ...parsedData,
-                };
-                currentEvent = "";
-                currentData = "";
-              } catch (error) {
-                console.error("Failed to parse event:", error);
-              }
-            }
+      for (const player of players) {
+        try {
+          execSync(`which ${player}`);
+          if (player === "mpg123" || player === "mplayer") {
+            command = `${player} "${filePath}"`;
+          } else if (player === "aplay") {
+            command = `${player} -q "${filePath}"`;
+          } else if (player === "ffplay") {
+            command = `${player} -nodisp -autoexit -hide_banner -loglevel error "${filePath}"`;
+          } else {
+            continue;
           }
+          playerFound = true;
+          break;
+        } catch (e) {
+          // Player not found, try next one
+          continue;
         }
       }
-    } finally {
-      reader.releaseLock();
+
+      if (!playerFound) {
+        return {
+          success: false,
+          message:
+            "No suitable audio player found. Please install mpg123, mplayer, aplay, or ffplay.",
+        };
+      }
     }
-  } else {
-    // Fallback for other stream types
-    throw new Error("Unsupported stream type");
+
+    // Execute the command
+    execSync(command);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to play audio: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
-function sendLog(level: string, message: string) {
-  // Just log to console for progress reporting
-  console.log(`[${level}] ${message}`);
+async function generateAndPlaySpeech(
+  text: string,
+  speaker: string = "cove",
+  speedAlpha: number = 1.0,
+  reduceLatency: boolean = false
+): Promise<any> {
+  log(
+    "INFO",
+    `Starting speech synthesis with voice "${speaker}" for text: "${text.substring(0, 30)}${text.length > 30 ? "..." : ""}"`
+  );
+
+  try {
+    // Make the API request to get audio via JSON
+    const response = await fetch("https://users.rime.ai/v1/rime-tts", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${RIME_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: text,
+        speaker: speaker,
+        modelId: "mistv2",
+        speedAlpha: speedAlpha,
+        reduceLatency: reduceLatency,
+        audioFormat: "mp3",
+        samplingRate: 22050,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Parse the JSON response
+    const data = (await response.json()) as { data: string };
+    if (!data || !data.data) {
+      throw new Error("Invalid response format from Rime API");
+    }
+
+    log("INFO", "Audio data received from Rime");
+
+    // Decode the base64 audio data
+    const audioBuffer = Buffer.from(data.data, "base64");
+
+    // Create a unique temporary file path
+    const tmpFilePath = path.join(tmpDir, `speech-${Date.now()}.mp3`);
+
+    // Write the audio data to the file
+    fs.writeFileSync(tmpFilePath, audioBuffer);
+    log("INFO", `Audio saved to ${tmpFilePath}`);
+
+    // Play the audio file
+    log("INFO", "Playing audio...");
+    const playResult = playAudio(tmpFilePath);
+    if (!playResult.success) {
+      throw new Error(playResult.message);
+    }
+
+    log("INFO", "Audio playback completed");
+
+    return {
+      success: true,
+      text,
+      speaker,
+    };
+  } catch (error) {
+    throw error;
+  }
 }
 
 async function doSpeak(params: {
@@ -163,78 +226,14 @@ async function doSpeak(params: {
   reduceLatency?: boolean;
 }) {
   try {
-    sendLog(
-      "INFO",
-      `Starting speech synthesis for text: "${params.text.substring(0, 30)}${params.text.length > 30 ? "..." : ""}"`
+    return await generateAndPlaySpeech(
+      params.text,
+      params.speaker,
+      params.speedAlpha,
+      params.reduceLatency
     );
-
-    const response = await fetch("https://users.rime.ai/v1/rime-tts", {
-      method: "POST",
-      headers: {
-        Accept: "text/eventstream",
-        Authorization: `Bearer ${RIME_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: params.text,
-        speaker: params.speaker || "cove",
-        modelId: "mistv2",
-        speedAlpha: params.speedAlpha || 1.0,
-        reduceLatency: params.reduceLatency || false,
-        audioFormat: "mp3",
-      }),
-    });
-
-    if (!response.ok || !response.body) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Create a temporary file for the combined audio
-    const tmpFilePath = path.join(tmpDir, `speech-${Date.now()}.mp3`);
-    const outputStream = fs.createWriteStream(tmpFilePath);
-
-    let chunkCount = 0;
-    let wordTimestamps = null;
-
-    for await (const event of parseEventStream(response)) {
-      if (event.type === "chunk" && event.data) {
-        const chunk = Buffer.from(event.data, "base64");
-        outputStream.write(chunk);
-        chunkCount++;
-
-        sendLog("INFO", `Received audio chunk #${chunkCount} (${chunk.length} bytes)`);
-      } else if (event.type === "timestamps") {
-        wordTimestamps = event.word_timestamps;
-        sendLog("INFO", `Received word timestamps for ${wordTimestamps?.words.length || 0} words`);
-      } else if (event.type === "error") {
-        throw new Error(event.message || "Unknown error from Rime API");
-      } else if (event.type === "done" && event.done) {
-        sendLog("INFO", "Audio generation complete");
-      }
-    }
-
-    // Close the write stream and play the audio
-    outputStream.end();
-    await new Promise<void>((resolve) => outputStream.on("finish", resolve));
-
-    sendLog("INFO", `Playing audio from ${tmpFilePath}`);
-
-    try {
-      await playAudio(tmpFilePath);
-      sendLog("INFO", "Finished playing audio");
-    } catch (error) {
-      throw new Error(
-        `Failed to play audio: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    return {
-      success: true,
-      text: params.text,
-      speaker: params.speaker || "cove",
-      duration: wordTimestamps ? wordTimestamps.end[wordTimestamps.end.length - 1] : null,
-    };
   } catch (error: unknown) {
+    log("ERROR", `Error: ${error instanceof Error ? error.message : String(error)}`);
     throw new McpError(
       ErrorCode.InternalError,
       `Rime API error: ${error instanceof Error ? error.message : String(error)}`

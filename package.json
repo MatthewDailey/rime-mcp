@@ -9,7 +9,8 @@
     "watch": "esbuild index.ts --outfile=dist/index.cjs --bundle --platform=node --format=cjs --banner:js='#!/usr/bin/env node' --watch",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.cjs",
     "dev": "concurrently \"npm run watch\" \"npm run inspect\"",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "stream": "node stream-audio.js"
   },
   "bin": {
     "mcp-rime": "./dist/index.cjs"
@@ -21,13 +22,11 @@
     "@modelcontextprotocol/sdk": "^1.8.0",
     "dotenv": "^16.4.5",
     "node-fetch": "^3.3.2",
-    "play-sound": "^1.1.6",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    "@types/node-fetch": "^2.6.11",
-    "@types/play-sound": "^1.1.2",
     "@types/tmp": "^0.2.6",
     "concurrently": "^8.2.2",
     "esbuild": "^0.24.0",
