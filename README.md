@@ -49,18 +49,16 @@ The following environment variables can be used to customize the behavior:
 - `RIME_WHEN_TO_SPEAK`: When the tool should be used (default: "when asked to speak or when finishing a command")
 - `RIME_VOICE`: The default voice to use (default: "cove")
 
-### Example usage 1: Coding agent announcement
+## Example use cases
 
-Have Cursor/Windsurf/Zed announce when multi-file changes it complete and list the files that were edited.
+### Example 1: Coding agent announcements
 
 ```
 RIME_WHEN_TO_SPEAK="Speak when you complete a multi-file code change."
 RIME_GUIDANCE="Say a 1 sentance overview of the change and list all files that were edited."
 ```
 
-### Example usage 2: Learn how the kids talk these days
-
-Have Claude talk to you like you're Gen Alpha.
+### Example 2: Learn how the kids talk these days
 
 ```
 RIME_GUIDANCE="Use phrases and slang common among Gen Alpha."
@@ -68,6 +66,11 @@ RIME_WHO_TO_ADDRESS="Matt"
 RIME_WHEN_TO_SPEAK="when asked to speak"
 ```
 
+### Example 3: Different languages based on context
+
+```
+RIME_VOICE="use 'cove' when talking about Typescript and 'antoine' when talking about Python"
+```
 
 
 ## Usage
