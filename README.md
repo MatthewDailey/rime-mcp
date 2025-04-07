@@ -1,4 +1,4 @@
-# MCP Rime Server
+# Rime MCP 
 
 [![rime](rime-logo.png)](https://www.rime.ai)
 
@@ -16,7 +16,7 @@ A Model Context Protocol (MCP) server that provides text-to-speech capabilities 
 - A working audio output device
 - macOS: Uses `afplay`
 
-There's sample code from Claude for that following that is not tested 🤙✨
+There's sample code from Claude for the following that is not tested 🤙✨
   - Windows: Built-in Media.SoundPlayer (PowerShell)
   - Linux: mpg123, mplayer, aplay, or ffplay
 
