@@ -42,10 +42,22 @@ const server = new Server(
   }
 );
 
+// Environment variables for configuration
+const GUIDANCE = process.env.RIME_GUIDANCE;
+const WHO_TO_ADDRESS = process.env.RIME_WHO_TO_ADDRESS;
+const WHEN_TO_SPEAK = process.env.RIME_WHEN_TO_SPEAK || "when asked to speak";
+const VOICE = process.env.RIME_VOICE || "cove";
+
 const SPEAK_TOOL: Tool = {
   name: "speak",
-  description:
-    "Speak text aloud using Rime's text-to-speech API. Should be used when user asks you to speak or to announce and explain when you finish a command",
+  description: `Speak text aloud using Rime's text-to-speech API. Should be used when user asks you to speak or to announce and explain when you finish a command
+    
+User configuration:
+${WHO_TO_ADDRESS ? `WHO_TO_ADDRESS: ${WHO_TO_ADDRESS}` : ""}
+${WHEN_TO_SPEAK ? `WHEN_TO_SPEAK: ${WHEN_TO_SPEAK}` : ""}
+${VOICE ? `VOICE: ${VOICE}` : ""}
+${GUIDANCE ? `GUIDANCE: ${GUIDANCE}` : ""}
+    `,
   inputSchema: {
     type: "object",
     properties: {
@@ -55,7 +67,7 @@ const SPEAK_TOOL: Tool = {
       },
       speaker: {
         type: "string",
-        description: "The voice to use (defaults to 'cove')",
+        description: `The voice to use (defaults to '${VOICE}')`,
       },
       speedAlpha: {
         type: "number",

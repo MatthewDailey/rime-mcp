@@ -7,7 +7,6 @@ A Model Context Protocol (MCP) server that provides text-to-speech capabilities 
 - Exposes a `speak` tool that converts text to speech and plays it through system audio
 - Uses Rime's high-quality voice synthesis API
 - Supports various voice options and customization parameters
-- Detailed progress logging to the console
 - Cross-platform audio playback support
 
 ## Requirements
@@ -19,21 +18,57 @@ A Model Context Protocol (MCP) server that provides text-to-speech capabilities 
   - macOS: Built-in afplay (included with macOS)
   - Windows: Built-in Media.SoundPlayer (PowerShell)
 
-## Installation
-
-```bash
-npm install mcp-rime
-```
-
-## Configuration
-
-Create a `.env` file in your project root with your Rime API key:
+## MCP Configuration
 
 ```
-RIME_API_KEY=your_api_key_here
+"ref": {
+  "command": "npx",
+  "args": ["rime-mcp"],
+  "env": {
+      RIME_API_KEY=your_api_key_here
+
+      # Optional configuration
+      RIME_GUIDANCE="<guide how the agent speaks>"
+      RIME_WHO_TO_ADDRESS="<your name>"
+      RIME_WHEN_TO_SPEAK="<tell the agent when to speak>"
+      RIME_VOICE="cove" 
+  }
+}
 ```
+
+All of the optional env vars are part of the tool definition and are prompts to 
+
+All voice options are [listed here](https://users.rime.ai/data/voices/all-v2.json).
 
 You can get your API key from the [Rime Dashboard](https://rime.ai/dashboard/tokens).
+
+The following environment variables can be used to customize the behavior:
+
+- `RIME_GUIDANCE`: The main description of when and how to use the speak tool
+- `RIME_WHO_TO_ADDRESS`: Who the speech should address (default: "user")
+- `RIME_WHEN_TO_SPEAK`: When the tool should be used (default: "when asked to speak or when finishing a command")
+- `RIME_VOICE`: The default voice to use (default: "cove")
+
+### Example usage 1: Coding agent announcement
+
+Have Cursor/Windsurf/Zed announce when multi-file changes it complete and list the files that were edited.
+
+```
+RIME_WHEN_TO_SPEAK="Speak when you complete a multi-file code change."
+RIME_GUIDANCE="Say a 1 sentance overview of the change and list all files that were edited."
+```
+
+### Example usage 2: Learn how the kids talk these days
+
+Have Claude talk to you like you're Gen Alpha.
+
+```
+RIME_GUIDANCE="Use phrases and slang common among Gen Alpha."
+RIME_WHO_TO_ADDRESS="Matt"
+RIME_WHEN_TO_SPEAK="when asked to speak"
+```
+
+
 
 ## Usage
 
@@ -79,129 +114,6 @@ npm run build
 npm run dev
 ```
 
-## Progress Reporting
-
-The server logs detailed progress information to the console as it processes audio:
-
-- When speech synthesis starts
-- When audio data is received
-- When the audio file is saved
-- When audio playback starts and completes
-
-## Troubleshooting
-
-If you experience issues with audio playback:
-
-1. Make sure you have one of the supported audio players installed for your OS
-2. Check that your system's audio is working correctly
-3. Verify that your Rime API key is valid and has sufficient quota
-
 ## License
 
 MIT
-
-# Rime TTS Streaming Module
-
-A TypeScript/JavaScript module for streaming text-to-speech audio from Rime's WebSockets API.
-
-## Features
-
-- Stream audio from Rime's TTS service using WebSockets
-- Plays audio chunks as they arrive (reducing perceived latency)
-- Works across platforms (macOS, Windows, Linux)
-- Can be used as a command-line tool or imported as a module
-- Provides TypeScript types for better developer experience
-- Automatically cleans up temporary files
-
-## Prerequisites
-
-- Node.js v14 or higher
-- A Rime API key (get one at https://docs.rime.ai)
-- One of the following audio players (depending on your OS):
-  - macOS: afplay (built-in)
-  - Windows: Built-in SoundPlayer or ffplay
-  - Linux: mpg123, mplayer, aplay, or ffplay
-
-## Installation
-
-1. Clone or download this repository
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Add your Rime API key to a `.env` file:
-   ```
-   RIME_API_KEY=your_api_key_here
-   ```
-
-## Usage
-
-### As a Command-Line Tool
-
-Run the script with default text:
-
-```
-npm run stream
-```
-
-Or specify your own text:
-
-```
-npm run stream -- "Your custom text to be spoken goes here."
-```
-
-### As a Module in Your TypeScript/JavaScript Project
-
-```typescript
-// Import the playText function
-import { playText } from './stream-audio.js';
-
-// Basic usage
-await playText("Hello, this is some text to speak.");
-
-// With custom configuration
-await playText(
-  "This text will be spoken with custom settings.",
-  { 
-    speaker: "breeze", 
-    speedAlpha: 1.2,
-    initialBufferSize: 3
-  }
-);
-```
-
-See `example.ts` for a complete example of using the module.
-
-## Configuration Options
-
-The `playText` function accepts a second parameter with configuration options:
-
-```typescript
-interface TtsConfig {
-  speaker: string;         // Voice to use (default: "cove")
-  modelId: string;         // TTS model to use (default: "mistv2")
-  audioFormat: string;     // Output format (default: "mp3")
-  samplingRate: number;    // Audio sampling rate (default: 22050)
-  speedAlpha: number;      // Speed multiplier (default: 1.0, lower is faster)
-  reduceLatency: boolean;  // Optimize for lower latency (default: true)
-  initialBufferSize: number; // Chunks to buffer before playback (default: 2)
-}
-```
-
-## Available Voices
-
-Check the [Rime documentation](https://docs.rime.ai/api-reference/voices) for a complete list of available voices.
-
-## Development
-
-Build the TypeScript files:
-
-```
-npm run build
-```
-
-Run the example:
-
-```
-npx ts-node example.ts
-```
