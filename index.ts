@@ -31,8 +31,8 @@ process.on("exit", () => {
 
 const server = new Server(
   {
-    name: "mcp-rime",
-    version: "0.1.0",
+    name: "rime-mcp",
+    version: "0.3.0",
   },
   {
     capabilities: {
