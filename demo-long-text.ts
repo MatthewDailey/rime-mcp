@@ -2,7 +2,6 @@
 
 import { playText } from "./stream-audio.js";
 
-// A long text to demonstrate buffering effect
 const LONG_TEXT = `
 In the vast expanse of the digital realm, where bits and bytes dance in endless streams,
 we find ourselves at the intersection of technology and human experience. The art of
@@ -17,19 +16,13 @@ can create systems that not only speak with remarkable clarity but do so with
 minimal latency, enhancing the natural flow of human-computer interaction.
 `.trim();
 
-// Wrap the playText function to add timing logs
 async function demonstrateBuffering() {
-  console.log("\n=== Starting Buffering Demonstration ===\n");
+  console.log("\n=== Starting Demonstration ===\n");
 
   const startTime = Date.now();
   console.log(`[${new Date().toISOString()}] Starting text-to-speech streaming...`);
 
-  // Override the default config to use a larger buffer for demonstration
-  await playText(LONG_TEXT, {
-    initialBufferSize: 4, // Increase buffer size to make the effect more noticeable
-    reduceLatency: true,
-    speedAlpha: 1.0,
-  });
+  await playText(LONG_TEXT);
 
   const endTime = Date.now();
   console.log(`[${new Date().toISOString()}] Speech playback completed`);
@@ -37,7 +30,6 @@ async function demonstrateBuffering() {
   console.log("\n=== Demonstration Complete ===\n");
 }
 
-// Run the demonstration
 demonstrateBuffering().catch((error) => {
   console.error("Error during demonstration:", error);
   process.exit(1);
