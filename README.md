@@ -1,5 +1,8 @@
 # MCP Rime Server
 
+[![rime logo](rime-logo.png)](https://www.rime.ai)
+
+
 A Model Context Protocol (MCP) server that provides text-to-speech capabilities using the Rime API. This server downloads audio and plays it using the system's native audio player.
 
 ## Features
@@ -51,6 +54,9 @@ The following environment variables can be used to customize the behavior:
 
 ## Example use cases
 
+[![Demo of Rime MCP in Cursor](https://img.youtube.com/vi/tYqTACgijxk/0.jpg)](https://www.youtube.com/watch?v=tYqTACgijxk)
+
+
 ### Example 1: Coding agent announcements
 
 ```
@@ -72,33 +78,6 @@ RIME_WHEN_TO_SPEAK="when asked to speak"
 RIME_VOICE="use 'cove' when talking about Typescript and 'antoine' when talking about Python"
 ```
 
-
-## Usage
-
-1. Start the server:
-```bash
-npx mcp-rime
-```
-
-2. The server exposes a `speak` tool with the following parameters:
-
-- `text` (required): The text to speak aloud
-- `speaker` (optional): The voice to use (defaults to "cove")
-- `speedAlpha` (optional): Speech speed multiplier (default: 1.0)
-- `reduceLatency` (optional): Whether to optimize for lower latency (default: false)
-
-3. When the `speak` tool is called, it will:
-   - Connect to Rime's API and download the speech audio
-   - Save the audio to a temporary file
-   - Play the audio using your system's native audio player
-   - Clean up temporary files automatically
-
-## How It Works
-
-1. The server makes an HTTP request to Rime's TTS API
-2. The audio data is streamed into a temporary file
-3. Once the download is complete, the appropriate audio player for your OS is used to play the file
-4. After playback is complete, temporary files are cleaned up
 
 ## Development
 
