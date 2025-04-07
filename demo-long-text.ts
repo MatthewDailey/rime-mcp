@@ -16,7 +16,7 @@ can create systems that not only speak with remarkable clarity but do so with
 minimal latency, enhancing the natural flow of human-computer interaction.
 `.trim();
 
-async function demonstrateBuffering() {
+async function demo() {
   console.log("\n=== Starting Demonstration ===\n");
 
   const startTime = Date.now();
@@ -30,7 +30,7 @@ async function demonstrateBuffering() {
   console.log("\n=== Demonstration Complete ===\n");
 }
 
-demonstrateBuffering().catch((error) => {
+demo().catch((error) => {
   console.error("Error during demonstration:", error);
   process.exit(1);
 });
