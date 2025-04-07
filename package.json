@@ -1,6 +1,6 @@
 {
-  "name": "mcp-rime",
-  "version": "0.1.0",
+  "name": "rime-mcp",
+  "version": "0.2.0",
   "description": "ModelContextProtocol server for Rime text-to-speech API",
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
     "demo-buffer": "tsx demo-long-text.ts"
   },
   "bin": {
-    "mcp-rime": "./dist/index.cjs"
+    "rime-mcp": "./dist/index.cjs"
   },
   "files": [
     "dist"
