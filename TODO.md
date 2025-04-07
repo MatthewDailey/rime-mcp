@@ -9,4 +9,5 @@
 Notes:
 - no response format? https://docs.rime.ai/api-reference/endpoint/json-mp3
 - voices doesn't actually have a list of voices? https://docs.rime.ai/api-reference/voices
- -- need to hit a link to load them, maybe limitation of mintlify?
+ -- need to hit a link to load them, maybe limitation of mintlify
+- my account rolls back to "no plan" and then i select free and it works again

@@ -11,7 +11,7 @@
     "dev": "concurrently \"npm run watch\" \"npm run inspect\"",
     "prepublishOnly": "npm run build",
     "stream": "tsx stream-audio.ts",
-    "demo-buffer": "tsx demo-long-text.ts"
+    "demo": "tsx demo-long-text.ts"
   },
   "bin": {
     "rime-mcp": "./dist/index.cjs"

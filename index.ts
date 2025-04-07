@@ -101,9 +101,16 @@ async function doSpeak(params: {
     await playText(params.text);
 
     return {
-      success: true,
-      text: params.text,
-      speaker: params.speaker || "cove",
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            success: true,
+            text: params.text,
+            speaker: params.speaker || "cove",
+          }),
+        },
+      ],
     };
   } catch (error: unknown) {
     log("ERROR", `Error: ${error instanceof Error ? error.message : String(error)}`);
