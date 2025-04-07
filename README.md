@@ -9,17 +9,16 @@ A Model Context Protocol (MCP) server that provides text-to-speech capabilities 
 
 - Exposes a `speak` tool that converts text to speech and plays it through system audio
 - Uses Rime's high-quality voice synthesis API
-- Supports various voice options and customization parameters
-- Cross-platform audio playback support
 
 ## Requirements
 
 - Node.js 16.x or higher
 - A working audio output device
-- One of the following audio players (automatically detected):
-  - Linux: mpg123, mplayer, aplay, or ffplay
-  - macOS: Built-in afplay (included with macOS)
+- macOS: Uses `afplay`
+
+There's sample code from Claude for that following that is not tested 🤙✨
   - Windows: Built-in Media.SoundPlayer (PowerShell)
+  - Linux: mpg123, mplayer, aplay, or ffplay
 
 ## MCP Configuration
 

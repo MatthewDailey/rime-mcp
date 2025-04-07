@@ -32,7 +32,7 @@ process.on("exit", () => {
 const server = new Server(
   {
     name: "rime-mcp",
-    version: "0.4.0",
+    version: "0.5.0",
   },
   {
     capabilities: {

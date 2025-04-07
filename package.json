@@ -1,6 +1,6 @@
 {
   "name": "rime-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "ModelContextProtocol server for Rime text-to-speech API",
   "type": "module",
   "scripts": {
