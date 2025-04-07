@@ -54,8 +54,8 @@ The following environment variables can be used to customize the behavior:
 ### Example 1: Coding agent announcements
 
 ```
-RIME_WHEN_TO_SPEAK="Speak when you complete a multi-file code change."
-RIME_GUIDANCE="Say a 1 sentance overview of the change and list all files that were edited."
+"RIME_WHEN_TO_SPEAK": "Always conclude your answers by speaking.",
+"RIME_GUIDANCE": "Give a brief overview of the answer. If any files were edited, list them."
 ```
 
 ### Example 2: Learn how the kids talk these days

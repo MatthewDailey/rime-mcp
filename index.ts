@@ -53,9 +53,13 @@ const SPEAK_TOOL: Tool = {
   description: `Speak text aloud using Rime's text-to-speech API. Should be used when user asks you to speak or to announce and explain when you finish a command
     
 User configuration:
+
 ${WHO_TO_ADDRESS ? `WHO_TO_ADDRESS: ${WHO_TO_ADDRESS}` : ""}
+
 ${WHEN_TO_SPEAK ? `WHEN_TO_SPEAK: ${WHEN_TO_SPEAK}` : ""}
+
 ${VOICE ? `VOICE: ${VOICE}` : ""}
+
 ${GUIDANCE ? `GUIDANCE: ${GUIDANCE}` : ""}
     `,
   inputSchema: {
