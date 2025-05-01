@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import WebSocket from "ws";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { execSync, spawn, ChildProcess } from "child_process";
+// Import for node-fetch v3.x
+import fetch from "node-fetch";
 
 interface AudioPlayerCommand {
   cmd: string;
@@ -14,44 +15,18 @@ interface AudioPlayerCommand {
 
 interface TtsConfig {
   speaker: string;
-  modelId: string;
   audioFormat: string;
   samplingRate: number;
   speedAlpha: number;
   reduceLatency: boolean;
 }
 
-interface TimestampData {
-  words: string[];
-  start: number[];
-  end: number[];
-}
-
-interface AudioChunkMessage {
-  type: "chunk";
-  data: string;
-  contextId: string | null;
-}
-
-interface TimestampsMessage {
-  type: "timestamps";
-  word_timestamps: TimestampData;
-}
-
-interface ErrorMessage {
-  type: "error";
-  message: string;
-}
-
-type WebSocketMessage = AudioChunkMessage | TimestampsMessage | ErrorMessage;
-
 const DEFAULT_CONFIG: TtsConfig = {
-  speaker: "cove",
-  modelId: "mistv2",
+  speaker: "luna",
   audioFormat: "mp3",
   samplingRate: 22050,
   speedAlpha: 1.0,
-  reduceLatency: true,
+  reduceLatency: false,
 };
 
 function getApiKey(): string {
@@ -111,7 +86,7 @@ function getAudioPlayerCommand(): AudioPlayerCommand {
 }
 
 /**
- * Play text using Rime's WebSockets API
+ * Play text using Rime's REST API
  * @param text - The text to convert to speech
  * @param customConfig - Optional configuration overrides
  * @returns A promise that resolves when audio playback completes
@@ -119,7 +94,7 @@ function getAudioPlayerCommand(): AudioPlayerCommand {
 export async function playText(text: string, customConfig?: Partial<TtsConfig>): Promise<void> {
   const config: TtsConfig = { ...DEFAULT_CONFIG, ...customConfig };
 
-  console.error("Starting Rime WebSockets streaming with text:");
+  console.error("Starting Rime TTS with text:");
   console.error(`"${text}"`);
 
   try {
@@ -127,6 +102,8 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
 
     // Create temporary directory for audio files
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rime-stream-"));
+    const audioFilePath = path.join(tmpDir, "audio.mp3");
+
     const cleanup = () => {
       try {
         fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -135,105 +112,99 @@ export async function playText(text: string, customConfig?: Partial<TtsConfig>):
       }
     };
 
-    return new Promise((resolve, reject) => {
-      const ws = new WebSocket(
-        `wss://users-ws.rime.ai/ws2?speaker=${config.speaker}&modelId=${config.modelId}&audioFormat=${config.audioFormat}&samplingRate=${config.samplingRate}&speedAlpha=${config.speedAlpha}&reduceLatency=${config.reduceLatency}`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
+    // Prepare API request
+    const modelId = findModelId(config.speaker);
+
+    const options = {
+      method: "POST",
+      headers: {
+        Accept: "audio/mp3",
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        speaker: config.speaker,
+        text: text,
+        modelId: modelId,
+        lang: "eng",
+        samplingRate: config.samplingRate,
+        speedAlpha: config.speedAlpha,
+        reduceLatency: config.reduceLatency,
+      }),
+    };
+
+    // Make API request
+    console.error("Sending request to Rime API...");
+    const response = await fetch("https://users.rime.ai/v1/rime-tts", options);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText} - ${errorText}`
       );
+    }
 
-      const audioFilePath = path.join(tmpDir, "combined-audio.mp3");
-      const audioFileStream = fs.createWriteStream(audioFilePath);
+    // Get audio data as arrayBuffer
+    const audioBuffer = await response.arrayBuffer();
 
-      let isPlaying = false;
-      let playerProcess: ChildProcess | null = null;
+    // Write audio data to file
+    fs.writeFileSync(audioFilePath, Buffer.from(audioBuffer));
+    console.error(`Audio saved to ${audioFilePath}`);
 
-      function startPlayback() {
-        if (isPlaying) return;
-
+    return new Promise((resolve, reject) => {
+      try {
         console.error("Starting audio playback...");
-        isPlaying = true;
+        const player = getAudioPlayerCommand();
 
-        try {
-          const player = getAudioPlayerCommand();
+        const playerProcess = spawn(player.cmd, [...player.args, audioFilePath]);
 
-          playerProcess = spawn(player.cmd, [...player.args, audioFilePath]);
+        playerProcess.stdout?.on("data", (data) => {
+          console.error(`Player output: ${data}`);
+        });
 
-          playerProcess.stdout?.on("data", (data) => {
-            console.error(`Player output: ${data}`);
-          });
+        playerProcess.stderr?.on("data", (data) => {
+          console.error(`Player error: ${data}`);
+        });
 
-          playerProcess.stderr?.on("data", (data) => {
-            console.error(`Player error: ${data}`);
-          });
-
-          playerProcess.on("close", (code) => {
-            console.error(`Player process exited with code ${code || 0}`);
-            cleanup();
-            resolve();
-          });
-
-          playerProcess.on("error", (error: Error) => {
-            console.error("Player process error:", error);
-            cleanup();
-            reject(error);
-          });
-        } catch (err) {
+        playerProcess.on("close", (code) => {
+          console.error(`Player process exited with code ${code || 0}`);
           cleanup();
-          reject(err);
-        }
-      }
+          resolve();
+        });
 
-      ws.on("open", function open() {
-        console.error("WebSocket connection established.");
-        ws.send(JSON.stringify({ text }));
-        setTimeout(() => {
-          ws.send(JSON.stringify({ operation: "eos" }));
-        }, 1000); // Give some time for the server to process the text
-      });
-
-      ws.on("message", async function incoming(data: WebSocket.RawData) {
-        try {
-          const message = JSON.parse(data.toString()) as WebSocketMessage;
-
-          if (message.type === "chunk" && "data" in message) {
-            const audioBuffer = Buffer.from(message.data, "base64");
-            audioFileStream.write(audioBuffer);
-            console.error(`Received chunk (${audioBuffer.length} bytes)`);
-          } else if (message.type === "timestamps") {
-            // Optional: log the timestamps if needed for debugging
-            // console.error("Word timestamps received", message.word_timestamps);
-          } else if (message.type === "error") {
-            console.error("Received error:", message.message);
-            cleanup();
-            reject(new Error(message.message));
-          }
-        } catch (error) {
-          console.error("Error processing message:", error);
+        playerProcess.on("error", (error: Error) => {
+          console.error("Player process error:", error);
           cleanup();
           reject(error);
-        }
-      });
-
-      ws.on("close", function close() {
-        console.error("WebSocket connection closed");
-        audioFileStream.end();
-        if (!isPlaying) {
-          startPlayback();
-        }
-      });
-
-      ws.on("error", function error(err: Error) {
-        console.error("WebSocket error:", err);
+        });
+      } catch (err) {
         cleanup();
         reject(err);
-      });
+      }
     });
   } catch (error) {
     console.error("Error:", error);
     throw error;
   }
+}
+
+function findModelId(speaker: string): string {
+  const voices = JSON.parse(fs.readFileSync("voices.json", "utf8"));
+  // Find the model ID for the given speaker
+  // Default to "mist" model if not found
+  let modelId = "mist";
+
+  // Check if the speaker exists in any model
+  for (const [model, languages] of Object.entries(voices)) {
+    for (const [lang, speakers] of Object.entries(languages as { [key: string]: string[] })) {
+      if (Array.isArray(speakers) && speakers.includes(speaker)) {
+        modelId = model;
+        return modelId;
+      }
+    }
+  }
+
+  // If we reach here, the speaker wasn't found
+  console.error(`Speaker "${speaker}" not found in voices.json, defaulting to "mist" model`);
+  return modelId;
 }
