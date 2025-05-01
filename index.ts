@@ -102,7 +102,11 @@ async function doSpeak(params: {
 }) {
   try {
     // Use the playText function from stream-audio.ts
-    await playText(params.text);
+    await playText(params.text, {
+      speaker: params.speaker || "cove",
+      speedAlpha: params.speedAlpha || 1.0,
+      reduceLatency: params.reduceLatency || false,
+    });
 
     return {
       content: [
