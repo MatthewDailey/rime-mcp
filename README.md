@@ -2,8 +2,11 @@
 
 [![rime](rime-logo.png)](https://www.rime.ai)
 
-
 A Model Context Protocol (MCP) server that provides text-to-speech capabilities using the Rime API. This server downloads audio and plays it using the system's native audio player.
+
+<a href="https://glama.ai/mcp/servers/@MatthewDailey/rime-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@MatthewDailey/rime-mcp/badge" alt="Rime MCP server" />
+</a>
 
 ## Features
 
