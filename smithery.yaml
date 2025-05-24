@@ -1,0 +1,43 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['dist/index.cjs'], env: {
+        RIME_API_KEY: config.rimeApiKey,
+        RIME_GUIDANCE: config.rimeGuidance,
+        RIME_WHO_TO_ADDRESS: config.rimeWhoToAddress,
+        RIME_WHEN_TO_SPEAK: config.rimeWhenToSpeak,
+        RIME_VOICE: config.rimeVoice
+      } })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - rimeApiKey
+    properties:
+      rimeApiKey:
+        type: string
+        description: Rime API key
+      rimeGuidance:
+        type: string
+        description: Guidance for when/how to use the speak tool
+      rimeWhoToAddress:
+        type: string
+        description: Who the speech should address
+      rimeWhenToSpeak:
+        type: string
+        default: when asked to speak
+        description: When the tool should be used
+      rimeVoice:
+        type: string
+        default: cove
+        description: Default voice to use
+  exampleConfig:
+    rimeApiKey: your_api_key_here
+    rimeGuidance: Announce changes after commands
+    rimeWhoToAddress: Developer
+    rimeWhenToSpeak: when finishing a command
+    rimeVoice: cove
