@@ -104,3 +104,12 @@ MIT
 <a href="https://glama.ai/mcp/servers/@MatthewDailey/rime-mcp">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@MatthewDailey/rime-mcp/badge" alt="Rime MCP server" />
 </a>
+<a href="https://smithery.ai/server/@MatthewDailey/rime-mcp"><img alt="Smithery Badge" src="https://smithery.ai/badge/@MatthewDailey/rime-mcp"></a>
+
+### Installing via Smithery
+
+To install Rime Text-to-Speech Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@MatthewDailey/rime-mcp):
+
+```bash
+npx -y @smithery/cli install @MatthewDailey/rime-mcp --client claude
+```
