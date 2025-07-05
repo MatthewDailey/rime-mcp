@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/matthewdailey-rime-mcp-badge.png)](https://mseep.ai/app/matthewdailey-rime-mcp)
+
 # Rime MCP 
 
 [![rime](rime-logo.png)](https://www.rime.ai)
